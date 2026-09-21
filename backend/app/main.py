@@ -15,7 +15,7 @@ MAX_LOOKBACK_MINUTES = 7 * 24 * 60  # 1週間
 # 同期エンドポイント(D1/LINE APIへのブロッキング呼び出しを含む)を実行するスレッドプールの
 # 上限。anyioのデフォルト(40)は実トラフィック(M5Stackから1分間隔+ダッシュボード閲覧程度)
 # に対して過大で、外部APIが詰まった際にスレッドが積み上がりメモリを圧迫しうるため絞る。
-THREAD_LIMIT = 8
+THREAD_LIMIT = 5
 
 
 @asynccontextmanager
