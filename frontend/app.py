@@ -32,6 +32,12 @@ st.markdown(
     html, body, [class^="st-"], .stApp {
         font-family: "Noto Sans JP", sans-serif;
     }
+    /* Streamlitのアイコン(expanderの矢印等)はMaterial Symbolsのリガチャ文字を
+       アイコンとして描画しているため、フォントを上書きすると文字("arrow_..."等)が
+       そのまま表示されてしまう。アイコン要素だけは元のフォントに戻す。 */
+    [data-testid="stIconMaterial"] {
+        font-family: "Material Symbols Rounded" !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -79,7 +85,6 @@ HUMIDITY_MAX = 90.0
 # M5Stack側の温湿度収集間隔(1分。温湿度計本体のデータ記録間隔に合わせている)に
 # 揃えた自動更新間隔。それより速く更新しても新しいデータは来ないため、選択肢にはしない。
 AUTO_REFRESH_SECONDS = 60
-METER_INTERVAL_SECONDS = 60
 
 # グラフの描画範囲選択肢。ラベル -> 表示期間。
 RANGE_OPTIONS = {
@@ -93,11 +98,11 @@ DEFAULT_RANGE_LABEL = "6時間"
 
 
 @st.cache_data(ttl=10)
-def fetch_readings(limit: int) -> pd.DataFrame:
+def fetch_readings(minutes: int) -> pd.DataFrame:
     resp = httpx.get(
         f"{FASTAPI_URL}/api/readings",
         headers={"X-API-Key": API_KEY},
-        params={"limit": limit},
+        params={"minutes": minutes},
         timeout=10.0,
     )
     resp.raise_for_status()
@@ -172,20 +177,12 @@ selected_range = RANGE_OPTIONS[st.session_state.range_label]
 
 @st.fragment(run_every=AUTO_REFRESH_SECONDS)
 def render_dashboard() -> None:
-    # 選択範囲をカバーするのに必要な件数(収集間隔1分)に、取得漏れ・遅延分の
-    # 余裕を加えて取得する。
-    limit = int(selected_range.total_seconds() // METER_INTERVAL_SECONDS) + 10
-    raw_df = fetch_readings(limit)
-
-    if raw_df.empty:
-        st.info("まだデータがありません。M5Stackからのレポート送信をお待ちください。")
-        return
-
-    cutoff = pd.Timestamp.now(tz="Asia/Tokyo") - selected_range
-    df = raw_df[raw_df["recorded_at"] >= cutoff]
+    # 選択範囲をそのままDB側の絞り込み条件(直近何分前まで)として渡す。
+    minutes = int(selected_range.total_seconds() // 60)
+    df = fetch_readings(minutes)
 
     if df.empty:
-        st.info(f"選択した範囲({st.session_state.range_label})にはデータがありません。直近のデータはより古いようです。")
+        st.info("まだデータがありません。M5Stackからのレポート送信をお待ちください。")
         return
 
     latest = df.iloc[-1]

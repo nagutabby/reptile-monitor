@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 
@@ -8,6 +8,8 @@ from .schemas import ReadingIn, ReadingOut
 
 app = FastAPI(title="Reptile Monitor API")
 logger = logging.getLogger("reptile_monitor")
+
+MAX_LOOKBACK_MINUTES = 7 * 24 * 60  # 1週間
 
 
 def verify_api_key(x_api_key: str = Header(...)) -> None:
@@ -32,10 +34,11 @@ def create_reading(reading: ReadingIn) -> dict:
 
 
 @app.get("/api/readings", response_model=list[ReadingOut], dependencies=[Depends(verify_api_key)])
-def list_readings(limit: int = Query(default=500, le=10200)) -> list[dict]:
+def list_readings(minutes: int = Query(default=360, ge=1, le=MAX_LOOKBACK_MINUTES)) -> list[dict]:
+    cutoff = (datetime.now(timezone.utc) - timedelta(minutes=minutes)).isoformat()
     return d1.query(
-        "SELECT id, temp_c, humidity, recorded_at FROM readings ORDER BY recorded_at DESC LIMIT ?",
-        [limit],
+        "SELECT id, temp_c, humidity, recorded_at FROM readings WHERE recorded_at >= ? ORDER BY recorded_at ASC",
+        [cutoff],
     )
 
 
