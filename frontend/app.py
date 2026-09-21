@@ -116,6 +116,10 @@ selected_label = st.segmented_control(
     "グラフの表示範囲",
     options=list(RANGE_OPTIONS.keys()),
     default=st.session_state.range_label,
+    # keyを固定しないと、defaultの値(=session_state)が変わるたびにウィジェットの
+    # 自動生成キーも変わってしまい、クリックした値が次回再実行時に反映されず
+    # 2回目のクリックでようやく切り替わる不具合が起きる。
+    key="range_label_widget",
 )
 # 選択中のボタンをもう一度押すと選択解除されNoneが返るため、その場合は前回の選択を保つ。
 if selected_label is not None:
