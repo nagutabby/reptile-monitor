@@ -1,15 +1,30 @@
 import logging
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 
+import anyio.to_thread
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 
 from . import alerts, config, d1
 from .schemas import ReadingIn, ReadingOut
 
-app = FastAPI(title="Reptile Monitor API")
 logger = logging.getLogger("reptile_monitor")
 
 MAX_LOOKBACK_MINUTES = 7 * 24 * 60  # 1週間
+
+# 同期エンドポイント(D1/LINE APIへのブロッキング呼び出しを含む)を実行するスレッドプールの
+# 上限。anyioのデフォルト(40)は実トラフィック(M5Stackから1分間隔+ダッシュボード閲覧程度)
+# に対して過大で、外部APIが詰まった際にスレッドが積み上がりメモリを圧迫しうるため絞る。
+THREAD_LIMIT = 8
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    anyio.to_thread.current_default_thread_limiter().total_tokens = THREAD_LIMIT
+    yield
+
+
+app = FastAPI(title="Reptile Monitor API", lifespan=lifespan)
 
 
 def verify_api_key(x_api_key: str = Header(...)) -> None:
