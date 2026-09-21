@@ -36,6 +36,12 @@ st.markdown(
     [data-testid="stIconMaterial"] {
         font-family: "Material Symbols Rounded" !important;
     }
+    /* モバイル幅では見出し(タイトル)が折り返って2行になりがちなため縮小する。 */
+    @media (max-width: 480px) {
+        .stApp h1 {
+            font-size: 1.5rem;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
