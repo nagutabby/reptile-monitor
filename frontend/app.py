@@ -85,9 +85,9 @@ def line_chart_with_thresholds(
             x=alt.X(
                 "recorded_at:T",
                 title=None,
-                # tickMinStep(時間軸ではミリ秒単位)を1分に固定し、1分未満の間隔で目盛りが
-                # 生成されて秒非表示フォーマットのせいで同じ分表示が連続する事態を防ぐ。
-                axis=alt.Axis(format="%H:%M", tickMinStep=60000),
+                # tickMinStep(時間軸ではミリ秒単位)を5分に固定し、データ間隔(1分)より
+                # 密な目盛りが生成されて同じ分表示が連続する事態を防ぐ。
+                axis=alt.Axis(format="%H:%M", tickMinStep=5 * 60 * 1000),
             ),
             y=alt.Y(f"{value_col}:Q", title=y_title, scale=y_scale),
             tooltip=[alt.Tooltip("recorded_at:T", title="時刻"), alt.Tooltip(f"{value_col}:Q", title=y_title)],
