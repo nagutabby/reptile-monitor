@@ -36,9 +36,16 @@ st.markdown(
     [data-testid="stIconMaterial"] {
         font-family: "Material Symbols Rounded" !important;
     }
-    /* モバイル幅では見出し(タイトル)が折り返って2行になりがちなため縮小する。 */
+    /* モバイル幅ではタイトルとサブヘッダーのサイズ差が見た目のバランスを崩すため、
+       タイトルを縮小しサブヘッダーをさらに縮小して差を詰める。 */
     @media (max-width: 480px) {
         .stApp h1 {
+            font-size: 1.75rem;
+        }
+        .stApp h2 {
+            font-size: 1.625rem;
+        }
+        .stApp h3 {
             font-size: 1.5rem;
         }
     }
