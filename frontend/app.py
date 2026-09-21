@@ -66,7 +66,11 @@ def line_chart_with_thresholds(
         alt.Chart(df)
         .mark_line(strokeWidth=2, color=color)
         .encode(
-            x=alt.X("recorded_at:T", title=None),
+            x=alt.X(
+                "recorded_at:T",
+                title=None,
+                axis=alt.Axis(tickCount={"interval": "minute", "step": 1}, format="%H:%M"),
+            ),
             y=alt.Y(f"{value_col}:Q", title=y_title, scale=y_scale),
             tooltip=[alt.Tooltip("recorded_at:T", title="時刻"), alt.Tooltip(f"{value_col}:Q", title=y_title)],
         )
@@ -100,7 +104,7 @@ else:
     col1.metric("最新温度", f"{latest['temp_c']:.1f} ℃", delta="異常" if is_temp_abnormal else None, delta_color="inverse")
     col2.metric("最新湿度", f"{latest['humidity']:.0f} %", delta="異常" if is_humidity_abnormal else None, delta_color="inverse")
 
-    st.caption(f"最終更新: {latest['recorded_at'].strftime('%Y-%m-%d %H:%M:%S')} (JST)")
+    st.caption(f"最終更新: {latest['recorded_at'].strftime('%Y-%m-%d %H:%M:%S')}")
 
     st.subheader("温度の推移")
     st.altair_chart(
