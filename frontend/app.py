@@ -15,7 +15,7 @@ import streamlit as st
 # validate_palette.js でCVD分離度・コントラストを検証済み)。
 # 温度=黄金(体色)、湿度=スレートブルー(スノー系モルフ)、危険域=赤茶(体色寄りの警告色)。
 COLOR_TEMP = "#c08a20"
-COLOR_HUMIDITY = "#5c72b0"
+COLOR_HUMIDITY = "#5a8ac2"
 COLOR_CRITICAL = "#aa413c"
 
 PAGE_TITLE = "レオパ温湿度モニター"
@@ -103,7 +103,7 @@ def line_chart_with_thresholds(
     y_scale = alt.Scale(domain=list(y_domain)) if y_domain else alt.Undefined
     line = (
         alt.Chart(df)
-        .mark_line(strokeWidth=2, color=color)
+        .mark_line(strokeWidth=3, color=color)
         .encode(
             x=alt.X(
                 "recorded_at:T",
@@ -119,7 +119,7 @@ def line_chart_with_thresholds(
     thresholds = pd.DataFrame({"y": [min_threshold, max_threshold]})
     rules = (
         alt.Chart(thresholds)
-        .mark_rule(strokeWidth=1, color=COLOR_CRITICAL)
+        .mark_rule(strokeWidth=0.75, color=COLOR_CRITICAL)
         .encode(y="y:Q")
     )
     labels = (
