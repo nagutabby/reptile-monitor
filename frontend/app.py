@@ -4,6 +4,7 @@ FastAPIバックエンドの GET /api/readings を叩いて可視化する(D1に
 """
 
 import os
+from datetime import timedelta
 
 import altair as alt
 import httpx
@@ -34,13 +35,24 @@ TEMP_MAX_C = 30.0
 HUMIDITY_MIN = 40.0
 HUMIDITY_MAX = 90.0
 
-# 自動更新の間隔選択肢。ラベル -> 秒数("オフ"=0は自動更新しない)。
-REFRESH_INTERVALS = {"10秒": 10, "30秒": 30, "1分": 60, "5分": 300, "オフ": 0}
-DEFAULT_REFRESH_LABEL = "1分"
+# M5Stack側の温湿度収集間隔(5分)に合わせた自動更新間隔。それより速く更新しても
+# 新しいデータは来ないため、選択肢にはしない。
+AUTO_REFRESH_SECONDS = 5 * 60
+METER_INTERVAL_SECONDS = 5 * 60
+
+# グラフの描画範囲選択肢。ラベル -> 表示期間。
+RANGE_OPTIONS = {
+    "30分": timedelta(minutes=30),
+    "6時間": timedelta(hours=6),
+    "12時間": timedelta(hours=12),
+    "1日": timedelta(days=1),
+    "1週間": timedelta(weeks=1),
+}
+DEFAULT_RANGE_LABEL = "6時間"
 
 
 @st.cache_data(ttl=10)
-def fetch_readings(limit: int = 500) -> pd.DataFrame:
+def fetch_readings(limit: int) -> pd.DataFrame:
     resp = httpx.get(
         f"{FASTAPI_URL}/api/readings",
         headers={"X-API-Key": API_KEY},
@@ -97,27 +109,37 @@ def line_chart_with_thresholds(
 
 st.title("ヒョウモントカゲモドキ 温湿度モニター")
 
-if "refresh_label" not in st.session_state:
-    st.session_state.refresh_label = DEFAULT_REFRESH_LABEL
+if "range_label" not in st.session_state:
+    st.session_state.range_label = DEFAULT_RANGE_LABEL
 
 selected_label = st.segmented_control(
-    "自動更新間隔",
-    options=list(REFRESH_INTERVALS.keys()),
-    default=st.session_state.refresh_label,
+    "グラフの表示範囲",
+    options=list(RANGE_OPTIONS.keys()),
+    default=st.session_state.range_label,
 )
 # 選択中のボタンをもう一度押すと選択解除されNoneが返るため、その場合は前回の選択を保つ。
 if selected_label is not None:
-    st.session_state.refresh_label = selected_label
+    st.session_state.range_label = selected_label
 
-refresh_seconds = REFRESH_INTERVALS[st.session_state.refresh_label]
+selected_range = RANGE_OPTIONS[st.session_state.range_label]
 
 
-@st.fragment(run_every=refresh_seconds if refresh_seconds > 0 else None)
+@st.fragment(run_every=AUTO_REFRESH_SECONDS)
 def render_dashboard() -> None:
-    df = fetch_readings()
+    # 選択範囲をカバーするのに必要な件数(収集間隔5分)に、取得漏れ・遅延分の
+    # 余裕を加えて取得する。
+    limit = int(selected_range.total_seconds() // METER_INTERVAL_SECONDS) + 10
+    raw_df = fetch_readings(limit)
+
+    if raw_df.empty:
+        st.info("まだデータがありません。M5Stackからのレポート送信をお待ちください。")
+        return
+
+    cutoff = pd.Timestamp.now(tz="Asia/Tokyo") - selected_range
+    df = raw_df[raw_df["recorded_at"] >= cutoff]
 
     if df.empty:
-        st.info("まだデータがありません。M5Stackからのレポート送信をお待ちください。")
+        st.info(f"選択した範囲({st.session_state.range_label})にはデータがありません。直近のデータはより古いようです。")
         return
 
     latest = df.iloc[-1]
