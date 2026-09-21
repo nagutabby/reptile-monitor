@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 from app import alerts, config
 from app import d1 as d1_module
-from app.main import app
+from app.main import MAX_LOOKBACK_MINUTES, app
 
 client = TestClient(app)
 
@@ -17,6 +17,54 @@ def test_list_readings_requires_api_key_header():
 def test_list_readings_rejects_wrong_api_key():
     resp = client.get("/api/readings", headers={"X-API-Key": "wrong-key"})
     assert resp.status_code == 401
+
+
+def test_list_readings_filters_by_minutes(monkeypatch):
+    queries = []
+    fake_rows = [{"id": 1, "temp_c": 27.0, "humidity": 50.0, "recorded_at": "2026-09-21T00:00:00+00:00"}]
+    monkeypatch.setattr(d1_module, "query", lambda sql, params=None: queries.append((sql, params)) or fake_rows)
+
+    resp = client.get("/api/readings", headers={"X-API-Key": config.API_KEY}, params={"minutes": 30})
+
+    assert resp.status_code == 200
+    assert resp.json() == fake_rows
+    assert len(queries) == 1
+    sql, params = queries[0]
+    assert "WHERE recorded_at >= ?" in sql
+    assert "ORDER BY recorded_at ASC" in sql
+    assert len(params) == 1  # cutoff(直近30分前の時刻)のみ
+
+
+def test_list_readings_default_minutes_is_used_when_omitted(monkeypatch):
+    queries = []
+    monkeypatch.setattr(d1_module, "query", lambda sql, params=None: queries.append((sql, params)) or [])
+
+    resp = client.get("/api/readings", headers={"X-API-Key": config.API_KEY})
+
+    assert resp.status_code == 200
+    assert len(queries) == 1
+
+
+def test_list_readings_rejects_minutes_below_one():
+    resp = client.get("/api/readings", headers={"X-API-Key": config.API_KEY}, params={"minutes": 0})
+    assert resp.status_code == 422
+
+
+def test_list_readings_rejects_minutes_beyond_one_week():
+    resp = client.get(
+        "/api/readings", headers={"X-API-Key": config.API_KEY}, params={"minutes": MAX_LOOKBACK_MINUTES + 1}
+    )
+    assert resp.status_code == 422
+
+
+def test_list_readings_accepts_minutes_at_one_week_boundary(monkeypatch):
+    monkeypatch.setattr(d1_module, "query", lambda sql, params=None: [])
+
+    resp = client.get(
+        "/api/readings", headers={"X-API-Key": config.API_KEY}, params={"minutes": MAX_LOOKBACK_MINUTES}
+    )
+
+    assert resp.status_code == 200
 
 
 def test_create_reading_inserts_and_evaluates_alert(monkeypatch):
