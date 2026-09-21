@@ -108,6 +108,7 @@ def line_chart_with_thresholds(
 
 
 st.title("ヒョウモントカゲモドキ 温湿度モニター")
+st.caption("1分ごとに自動更新されます。")
 
 if "range_label" not in st.session_state:
     st.session_state.range_label = DEFAULT_RANGE_LABEL
