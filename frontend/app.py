@@ -11,11 +11,12 @@ import httpx
 import pandas as pd
 import streamlit as st
 
-# dataviz skill の色指定(categorical slot 1=blue, slot 2=orange, status critical=red)。
-# ライトモード値をそのまま使用(Streamlitのダーク/ライト自動切替への個別最適化はしていない)。
-COLOR_TEMP = "#2a78d6"
-COLOR_HUMIDITY = "#eb6834"
-COLOR_CRITICAL = "#d03b3b"
+# レオパ配色(config.tomlの背景色 #1a130f を基準に dataviz skill の
+# validate_palette.js でCVD分離度・コントラストを検証済み)。
+# 温度=黄金(体色)、湿度=スレートブルー(スノー系モルフ)、危険域=赤茶(体色寄りの警告色)。
+COLOR_TEMP = "#c08a20"
+COLOR_HUMIDITY = "#5c72b0"
+COLOR_CRITICAL = "#aa413c"
 
 PAGE_TITLE = "レオパ温湿度モニター"
 
