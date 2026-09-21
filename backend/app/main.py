@@ -32,7 +32,7 @@ def create_reading(reading: ReadingIn) -> dict:
 
 
 @app.get("/api/readings", response_model=list[ReadingOut], dependencies=[Depends(verify_api_key)])
-def list_readings(limit: int = Query(default=500, le=2500)) -> list[dict]:
+def list_readings(limit: int = Query(default=500, le=10200)) -> list[dict]:
     return d1.query(
         "SELECT id, temp_c, humidity, recorded_at FROM readings ORDER BY recorded_at DESC LIMIT ?",
         [limit],

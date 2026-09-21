@@ -35,10 +35,10 @@ TEMP_MAX_C = 30.0
 HUMIDITY_MIN = 40.0
 HUMIDITY_MAX = 90.0
 
-# M5Stack側の温湿度収集間隔(5分)に合わせた自動更新間隔。それより速く更新しても
-# 新しいデータは来ないため、選択肢にはしない。
-AUTO_REFRESH_SECONDS = 5 * 60
-METER_INTERVAL_SECONDS = 5 * 60
+# M5Stack側の温湿度収集間隔(1分。温湿度計本体のデータ記録間隔に合わせている)に
+# 揃えた自動更新間隔。それより速く更新しても新しいデータは来ないため、選択肢にはしない。
+AUTO_REFRESH_SECONDS = 60
+METER_INTERVAL_SECONDS = 60
 
 # グラフの描画範囲選択肢。ラベル -> 表示期間。
 RANGE_OPTIONS = {
@@ -126,7 +126,7 @@ selected_range = RANGE_OPTIONS[st.session_state.range_label]
 
 @st.fragment(run_every=AUTO_REFRESH_SECONDS)
 def render_dashboard() -> None:
-    # 選択範囲をカバーするのに必要な件数(収集間隔5分)に、取得漏れ・遅延分の
+    # 選択範囲をカバーするのに必要な件数(収集間隔1分)に、取得漏れ・遅延分の
     # 余裕を加えて取得する。
     limit = int(selected_range.total_seconds() // METER_INTERVAL_SECONDS) + 10
     raw_df = fetch_readings(limit)
