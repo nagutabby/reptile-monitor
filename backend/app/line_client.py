@@ -7,15 +7,19 @@ from . import config
 
 _PUSH_URL = "https://api.line.me/v2/bot/message/push"
 
+# リクエストごとにTCP/TLS接続を張り直さないよう、プロセス内で使い回す。
+_client = httpx.Client(
+    headers={
+        "Authorization": f"Bearer {config.LINE_CHANNEL_ACCESS_TOKEN}",
+        "Content-Type": "application/json",
+    },
+    timeout=10.0,
+)
+
 
 def push_message(text: str) -> None:
-    resp = httpx.post(
+    resp = _client.post(
         _PUSH_URL,
-        headers={
-            "Authorization": f"Bearer {config.LINE_CHANNEL_ACCESS_TOKEN}",
-            "Content-Type": "application/json",
-        },
         json={"to": config.LINE_TO_ID, "messages": [{"type": "text", "text": text}]},
-        timeout=10.0,
     )
     resp.raise_for_status()
