@@ -116,7 +116,9 @@ else:
 
     st.subheader("湿度の推移")
     st.altair_chart(
-        line_chart_with_thresholds(df, "humidity", COLOR_HUMIDITY, HUMIDITY_MIN, HUMIDITY_MAX, "湿度 (%)"),
+        line_chart_with_thresholds(
+            df, "humidity", COLOR_HUMIDITY, HUMIDITY_MIN, HUMIDITY_MAX, "湿度 (%)", y_domain=(20, 100)
+        ),
         use_container_width=True,
     )
 
