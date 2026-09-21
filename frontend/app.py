@@ -69,7 +69,7 @@ def line_chart_with_thresholds(
             x=alt.X(
                 "recorded_at:T",
                 title=None,
-                axis=alt.Axis(tickCount={"interval": "minute", "step": 1}, format="%H:%M"),
+                axis=alt.Axis(format="%H:%M"),
             ),
             y=alt.Y(f"{value_col}:Q", title=y_title, scale=y_scale),
             tooltip=[alt.Tooltip("recorded_at:T", title="時刻"), alt.Tooltip(f"{value_col}:Q", title=y_title)],
