@@ -109,6 +109,8 @@ def fetch_readings(minutes: int) -> pd.DataFrame:
     df = pd.DataFrame(resp.json())
     if df.empty:
         return df
+    # idはフロントエンドで使わないため表示しない。
+    df = df.drop(columns=["id"])
     # バックエンドはUTCで記録している(datetime.now(timezone.utc))ため、表示はJSTに変換する。
     df["recorded_at"] = pd.to_datetime(df["recorded_at"]).dt.tz_convert("Asia/Tokyo")
     return df.sort_values("recorded_at")
