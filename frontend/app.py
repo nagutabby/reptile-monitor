@@ -19,6 +19,19 @@ COLOR_CRITICAL = "#d03b3b"
 
 st.set_page_config(page_title="ヒョウモントカゲモドキ温湿度モニター", layout="wide")
 
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+    html, body, [class^="st-"], .stApp {
+        font-family: "Noto Sans JP", sans-serif;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 def _get_setting(key: str) -> str:
     if key in st.secrets:
