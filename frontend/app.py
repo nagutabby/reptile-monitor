@@ -52,14 +52,21 @@ def fetch_readings(limit: int = 500) -> pd.DataFrame:
 
 
 def line_chart_with_thresholds(
-    df: pd.DataFrame, value_col: str, color: str, min_threshold: float, max_threshold: float, y_title: str
+    df: pd.DataFrame,
+    value_col: str,
+    color: str,
+    min_threshold: float,
+    max_threshold: float,
+    y_title: str,
+    y_domain: tuple[float, float] | None = None,
 ) -> alt.Chart:
+    y_scale = alt.Scale(domain=list(y_domain)) if y_domain else alt.Undefined
     line = (
         alt.Chart(df)
         .mark_line(strokeWidth=2, color=color)
         .encode(
             x=alt.X("recorded_at:T", title=None),
-            y=alt.Y(f"{value_col}:Q", title=y_title),
+            y=alt.Y(f"{value_col}:Q", title=y_title, scale=y_scale),
             tooltip=[alt.Tooltip("recorded_at:T", title="時刻"), alt.Tooltip(f"{value_col}:Q", title=y_title)],
         )
     )
@@ -96,7 +103,7 @@ else:
 
     st.subheader("温度の推移")
     st.altair_chart(
-        line_chart_with_thresholds(df, "temp_c", COLOR_TEMP, TEMP_MIN_C, TEMP_MAX_C, "温度 (℃)"),
+        line_chart_with_thresholds(df, "temp_c", COLOR_TEMP, TEMP_MIN_C, TEMP_MAX_C, "温度 (℃)", y_domain=(20, 35)),
         use_container_width=True,
     )
 
