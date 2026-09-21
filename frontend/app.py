@@ -10,6 +10,7 @@ import altair as alt
 import httpx
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 # dataviz skill の色指定(categorical slot 1=blue, slot 2=orange, status critical=red)。
 # ライトモード値をそのまま使用(Streamlitのダーク/ライト自動切替への個別最適化はしていない)。
@@ -17,7 +18,11 @@ COLOR_TEMP = "#2a78d6"
 COLOR_HUMIDITY = "#eb6834"
 COLOR_CRITICAL = "#d03b3b"
 
-st.set_page_config(page_title="ヒョウモントカゲモドキ温湿度モニター", layout="wide")
+PAGE_TITLE = "レオパ温湿度モニター"
+PAGE_DESCRIPTION = "ヒョウモントカゲモドキケージの温度・湿度をリアルタイムに可視化するダッシュボード"
+PAGE_URL = "https://reptile-monitor.streamlit.app/"
+
+st.set_page_config(page_title=PAGE_TITLE, layout="wide")
 
 st.markdown(
     """
@@ -30,6 +35,29 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True,
+)
+
+# StreamlitはOGPタグを直接指定する手段を持たないため、親ドキュメントのhead要素に
+# JavaScriptから<meta>タグを注入する(Streamlitの表示部分自体はiframe内で動くため、
+# window.parent経由でホスト側のdocumentを操作する)。
+components.html(
+    f"""
+    <script>
+    const metaTags = [
+        {{property: "og:title", content: "{PAGE_TITLE}"}},
+        {{property: "og:description", content: "{PAGE_DESCRIPTION}"}},
+        {{property: "og:type", content: "website"}},
+        {{property: "og:url", content: "{PAGE_URL}"}},
+    ];
+    metaTags.forEach(({{property, content}}) => {{
+        const tag = window.parent.document.createElement("meta");
+        tag.setAttribute("property", property);
+        tag.setAttribute("content", content);
+        window.parent.document.head.appendChild(tag);
+    }});
+    </script>
+    """,
+    height=0,
 )
 
 
@@ -120,7 +148,7 @@ def line_chart_with_thresholds(
     return (line + rules + labels).properties(height=280).interactive()
 
 
-st.title("ヒョウモントカゲモドキ 温湿度モニター")
+st.title(PAGE_TITLE)
 st.caption("1分ごとに自動更新されます。")
 
 if "range_label" not in st.session_state:
