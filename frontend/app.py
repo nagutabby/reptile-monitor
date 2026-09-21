@@ -47,7 +47,8 @@ def fetch_readings(limit: int = 500) -> pd.DataFrame:
     df = pd.DataFrame(resp.json())
     if df.empty:
         return df
-    df["recorded_at"] = pd.to_datetime(df["recorded_at"])
+    # バックエンドはUTCで記録している(datetime.now(timezone.utc))ため、表示はJSTに変換する。
+    df["recorded_at"] = pd.to_datetime(df["recorded_at"]).dt.tz_convert("Asia/Tokyo")
     return df.sort_values("recorded_at")
 
 
@@ -99,7 +100,7 @@ else:
     col1.metric("最新温度", f"{latest['temp_c']:.1f} ℃", delta="異常" if is_temp_abnormal else None, delta_color="inverse")
     col2.metric("最新湿度", f"{latest['humidity']:.0f} %", delta="異常" if is_humidity_abnormal else None, delta_color="inverse")
 
-    st.caption(f"最終更新: {latest['recorded_at']}")
+    st.caption(f"最終更新: {latest['recorded_at'].strftime('%Y-%m-%d %H:%M:%S')} (JST)")
 
     st.subheader("温度の推移")
     st.altair_chart(
