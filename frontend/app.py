@@ -34,8 +34,12 @@ TEMP_MAX_C = 30.0
 HUMIDITY_MIN = 40.0
 HUMIDITY_MAX = 90.0
 
+# 自動更新の間隔選択肢。ラベル -> 秒数("オフ"=0は自動更新しない)。
+REFRESH_INTERVALS = {"10秒": 10, "30秒": 30, "1分": 60, "5分": 300, "オフ": 0}
+DEFAULT_REFRESH_LABEL = "1分"
 
-@st.cache_data(ttl=60)
+
+@st.cache_data(ttl=10)
 def fetch_readings(limit: int = 500) -> pd.DataFrame:
     resp = httpx.get(
         f"{FASTAPI_URL}/api/readings",
@@ -93,11 +97,29 @@ def line_chart_with_thresholds(
 
 st.title("ヒョウモントカゲモドキ 温湿度モニター")
 
-df = fetch_readings()
+if "refresh_label" not in st.session_state:
+    st.session_state.refresh_label = DEFAULT_REFRESH_LABEL
 
-if df.empty:
-    st.info("まだデータがありません。M5Stackからのレポート送信をお待ちください。")
-else:
+selected_label = st.segmented_control(
+    "自動更新間隔",
+    options=list(REFRESH_INTERVALS.keys()),
+    default=st.session_state.refresh_label,
+)
+# 選択中のボタンをもう一度押すと選択解除されNoneが返るため、その場合は前回の選択を保つ。
+if selected_label is not None:
+    st.session_state.refresh_label = selected_label
+
+refresh_seconds = REFRESH_INTERVALS[st.session_state.refresh_label]
+
+
+@st.fragment(run_every=refresh_seconds if refresh_seconds > 0 else None)
+def render_dashboard() -> None:
+    df = fetch_readings()
+
+    if df.empty:
+        st.info("まだデータがありません。M5Stackからのレポート送信をお待ちください。")
+        return
+
     latest = df.iloc[-1]
     is_temp_abnormal = latest["temp_c"] < TEMP_MIN_C or latest["temp_c"] > TEMP_MAX_C
     is_humidity_abnormal = latest["humidity"] < HUMIDITY_MIN or latest["humidity"] > HUMIDITY_MAX
@@ -124,3 +146,6 @@ else:
 
     with st.expander("データ表を表示"):
         st.dataframe(df.sort_values("recorded_at", ascending=False), use_container_width=True)
+
+
+render_dashboard()
