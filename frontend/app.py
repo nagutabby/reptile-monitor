@@ -16,7 +16,7 @@ COLOR_TEMP = "#2a78d6"
 COLOR_HUMIDITY = "#eb6834"
 COLOR_CRITICAL = "#d03b3b"
 
-st.set_page_config(page_title="ヒョウモントカゲモドキ温湿度モニター", page_icon="🦎", layout="wide")
+st.set_page_config(page_title="ヒョウモントカゲモドキ温湿度モニター", layout="wide")
 
 
 def _get_setting(key: str) -> str:
@@ -84,7 +84,7 @@ def line_chart_with_thresholds(
     return (line + rules + labels).properties(height=280).interactive()
 
 
-st.title("🦎 ヒョウモントカゲモドキ 温湿度モニター")
+st.title("ヒョウモントカゲモドキ 温湿度モニター")
 
 df = fetch_readings()
 
