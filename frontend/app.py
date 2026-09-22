@@ -66,7 +66,7 @@ API_KEY = _get_setting("API_KEY")
 
 # 異常値の目安ライン(表示用)。backend/app/config.py の値と一致させること。
 TEMP_MIN_C = 24.0
-TEMP_MAX_C = 30.0
+TEMP_MAX_C = 32.0
 HUMIDITY_MIN = 40.0
 HUMIDITY_MAX = 90.0
 

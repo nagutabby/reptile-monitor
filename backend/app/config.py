@@ -17,7 +17,7 @@ LINE_TO_ID = os.environ["LINE_TO_ID"]
 # ヒョウモントカゲモドキは乾燥系種。旧設計(ニシアフリカトカゲモドキ向け湿度55-70%)の
 # 値は転用できない。飼育環境に応じて調整する場合はこの値を直接変更する。
 TEMP_MIN_C = 24.0
-TEMP_MAX_C = 30.0
+TEMP_MAX_C = 32.0
 HUMIDITY_MIN = 40.0
 HUMIDITY_MAX = 90.0
 
