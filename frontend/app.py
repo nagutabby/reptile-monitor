@@ -127,7 +127,7 @@ def line_chart_with_thresholds(
     y_scale = alt.Scale(domain=list(y_domain)) if y_domain else alt.Undefined
     line = (
         alt.Chart(df)
-        .mark_line(strokeWidth=3, color=color)
+        .mark_line(strokeWidth=3, color=color, interpolate="monotone")
         .encode(
             x=alt.X(
                 "recorded_at:T",
@@ -151,7 +151,9 @@ def line_chart_with_thresholds(
         .mark_text(align="left", dx=4, dy=-4, color=COLOR_CRITICAL, fontSize=11)
         .encode(y="y:Q", text=alt.Text("y:Q"), x=alt.value(0))
     )
-    return (line + rules + labels).properties(height=280).interactive()
+    # ユーザーがドラッグ/スクロールで拡大縮小できないよう、あえて.interactive()は付けない
+    # (tooltipのホバー表示自体はencode側のtooltipチャンネルで有効なまま)。
+    return (line + rules + labels).properties(height=280)
 
 
 def _device_state_label(is_on: bool | None) -> str:
