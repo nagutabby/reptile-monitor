@@ -16,7 +16,7 @@ HUMIDITY_PERCENT_MIN = 0.0
 HUMIDITY_PERCENT_MAX = 100.0
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class Temperature:
     celsius: float
 
@@ -25,7 +25,7 @@ class Temperature:
             raise ValueError(f"temp_c must be between {TEMP_C_MIN} and {TEMP_C_MAX}: {self.celsius}")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class Humidity:
     percent: float
 

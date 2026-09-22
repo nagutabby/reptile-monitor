@@ -45,7 +45,7 @@ def create_reading(reading: ReadingIn) -> dict:
         "INSERT INTO readings (temp_c, humidity, is_light_on, is_heater_on, recorded_at) VALUES (?, ?, ?, ?, ?)",
         [environment.temperature.celsius, environment.humidity.percent, reading.is_light_on, reading.is_heater_on, now],
     )
-    alerts.evaluate_and_notify(environment.temperature.celsius, environment.humidity.percent)
+    alerts.evaluate_and_notify(environment)
     return {"status": "ok"}
 
 

@@ -10,6 +10,11 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from app import alerts, config
+from app.domain import Environment, Humidity, Temperature
+
+
+def _env(temp_c: float, humidity: float) -> Environment:
+    return Environment(Temperature(temp_c), Humidity(humidity))
 
 
 class FakeD1:
@@ -56,51 +61,51 @@ def sent_messages(monkeypatch):
     ],
 )
 def test_is_abnormal_boundaries(temp_c, humidity, expected):
-    assert alerts.is_abnormal(temp_c, humidity) is expected
+    assert alerts.is_abnormal(_env(temp_c, humidity)) is expected
 
 
 def test_normal_to_normal_does_not_notify(fake_d1, sent_messages):
-    alerts.evaluate_and_notify(27.0, 50.0)
+    alerts.evaluate_and_notify(_env(27.0, 50.0))
 
     assert sent_messages == []
     assert fake_d1.state["is_abnormal"] == 0
 
 
 def test_normal_to_abnormal_notifies_once(fake_d1, sent_messages):
-    alerts.evaluate_and_notify(config.TEMP_MIN_C - 1, 50.0)
+    alerts.evaluate_and_notify(_env(config.TEMP_MIN_C - 1, 50.0))
 
     assert len(sent_messages) == 1
     assert fake_d1.state["is_abnormal"] == 1
 
 
 def test_repeated_abnormal_within_resend_interval_is_suppressed(fake_d1, sent_messages):
-    alerts.evaluate_and_notify(config.TEMP_MIN_C - 1, 50.0)
+    alerts.evaluate_and_notify(_env(config.TEMP_MIN_C - 1, 50.0))
     assert len(sent_messages) == 1
 
     # 異常が続いたまま(別の指標=湿度)でも、再通知抑制期間中は通知しない。
-    alerts.evaluate_and_notify(27.0, config.HUMIDITY_MIN - 1)
+    alerts.evaluate_and_notify(_env(27.0, config.HUMIDITY_MIN - 1))
 
     assert len(sent_messages) == 1
 
 
 def test_repeated_abnormal_after_resend_interval_renotifies(fake_d1, sent_messages):
-    alerts.evaluate_and_notify(config.TEMP_MIN_C - 1, 50.0)
+    alerts.evaluate_and_notify(_env(config.TEMP_MIN_C - 1, 50.0))
     assert len(sent_messages) == 1
 
     long_ago = datetime.now(timezone.utc) - timedelta(seconds=config.ALERT_RESEND_INTERVAL_SEC + 1)
     fake_d1.state["last_alert_at"] = long_ago.isoformat()
 
-    alerts.evaluate_and_notify(config.TEMP_MIN_C - 1, 50.0)
+    alerts.evaluate_and_notify(_env(config.TEMP_MIN_C - 1, 50.0))
 
     assert len(sent_messages) == 2
 
 
 def test_abnormal_to_normal_resets_state_without_notifying(fake_d1, sent_messages):
-    alerts.evaluate_and_notify(config.TEMP_MIN_C - 1, 50.0)
+    alerts.evaluate_and_notify(_env(config.TEMP_MIN_C - 1, 50.0))
     assert fake_d1.state["is_abnormal"] == 1
     assert len(sent_messages) == 1
 
-    alerts.evaluate_and_notify(27.0, 50.0)
+    alerts.evaluate_and_notify(_env(27.0, 50.0))
 
     assert fake_d1.state["is_abnormal"] == 0
     assert len(sent_messages) == 1  # 2回目(正常化)では通知していない

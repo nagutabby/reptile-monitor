@@ -44,6 +44,18 @@ def test_humidity_rejects_above_100():
         Humidity(100.1)
 
 
+def test_temperature_is_orderable():
+    assert Temperature(20.0) < Temperature(25.0)
+    assert Temperature(25.0) > Temperature(20.0)
+    assert not (Temperature(25.0) < Temperature(25.0))
+
+
+def test_humidity_is_orderable():
+    assert Humidity(40.0) < Humidity(50.0)
+    assert Humidity(50.0) > Humidity(40.0)
+    assert not (Humidity(50.0) < Humidity(50.0))
+
+
 def test_environment_pairs_temperature_and_humidity():
     env = Environment(Temperature(25.0), Humidity(50.0))
 

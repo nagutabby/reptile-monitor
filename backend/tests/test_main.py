@@ -114,7 +114,7 @@ def test_create_reading_inserts_and_evaluates_alert(monkeypatch):
     monkeypatch.setattr(d1_module, "query", lambda sql, params=None: inserted_sql.append(sql) or [])
 
     notified = []
-    monkeypatch.setattr(alerts, "evaluate_and_notify", lambda temp_c, humidity: notified.append((temp_c, humidity)))
+    monkeypatch.setattr(alerts, "evaluate_and_notify", lambda environment: notified.append(environment))
 
     resp = client.post(
         "/api/readings",
@@ -123,7 +123,9 @@ def test_create_reading_inserts_and_evaluates_alert(monkeypatch):
     )
 
     assert resp.status_code == 201
-    assert notified == [(27.0, 50.0)]
+    assert len(notified) == 1
+    assert notified[0].temperature.celsius == 27.0
+    assert notified[0].humidity.percent == 50.0
     assert any(sql.startswith("INSERT") for sql in inserted_sql)
 
 
@@ -132,7 +134,7 @@ def test_create_reading_accepts_optional_device_state(monkeypatch):
     monkeypatch.setattr(
         d1_module, "query", lambda sql, params=None: inserted_params.append(params) or []
     )
-    monkeypatch.setattr(alerts, "evaluate_and_notify", lambda temp_c, humidity: None)
+    monkeypatch.setattr(alerts, "evaluate_and_notify", lambda environment: None)
 
     resp = client.post(
         "/api/readings",
@@ -167,7 +169,7 @@ def test_create_reading_stores_null_when_device_state_omitted(monkeypatch):
     monkeypatch.setattr(
         d1_module, "query", lambda sql, params=None: inserted_params.append(params) or []
     )
-    monkeypatch.setattr(alerts, "evaluate_and_notify", lambda temp_c, humidity: None)
+    monkeypatch.setattr(alerts, "evaluate_and_notify", lambda environment: None)
 
     resp = client.post(
         "/api/readings",
