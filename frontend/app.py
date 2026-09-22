@@ -204,3 +204,8 @@ def render_dashboard() -> None:
 
 
 render_dashboard()
+
+st.markdown(
+    '<a rel="me" href="https://mastodon.social/@nagutabby">Mastodon</a>',
+    unsafe_allow_html=True,
+)
