@@ -86,6 +86,17 @@ DEFAULT_RANGE_LABEL = "6時間"
 
 
 @st.cache_data(ttl=10)
+def fetch_device_state() -> dict:
+    resp = httpx.get(
+        f"{FASTAPI_URL}/api/device_state",
+        headers={"X-API-Key": API_KEY},
+        timeout=10.0,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+@st.cache_data(ttl=10)
 def fetch_readings(minutes: int) -> pd.DataFrame:
     resp = httpx.get(
         f"{FASTAPI_URL}/api/readings",
@@ -143,6 +154,12 @@ def line_chart_with_thresholds(
     return (line + rules + labels).properties(height=280).interactive()
 
 
+def _device_state_label(is_on: bool | None) -> str:
+    if is_on is None:
+        return "不明"
+    return "ON" if is_on else "OFF"
+
+
 st.title(PAGE_TITLE)
 st.caption("1分ごとに自動更新されます。")
 
@@ -179,9 +196,13 @@ def render_dashboard() -> None:
     is_temp_abnormal = latest["temp_c"] < TEMP_MIN_C or latest["temp_c"] > TEMP_MAX_C
     is_humidity_abnormal = latest["humidity"] < HUMIDITY_MIN or latest["humidity"] > HUMIDITY_MAX
 
-    col1, col2 = st.columns(2)
+    device_state = fetch_device_state()
+
+    col1, col2, col3, col4 = st.columns(4)
     col1.metric("最新温度", f"{latest['temp_c']:.1f} ℃", delta="異常" if is_temp_abnormal else None, delta_color="inverse")
     col2.metric("最新湿度", f"{latest['humidity']:.0f} %", delta="異常" if is_humidity_abnormal else None, delta_color="inverse")
+    col3.metric("ライト", _device_state_label(device_state["is_light_on"]))
+    col4.metric("パネルヒーター", _device_state_label(device_state["is_heater_on"]))
 
     st.caption(f"最終更新: {latest['recorded_at'].strftime('%Y-%m-%d %H:%M:%S')}")
 
