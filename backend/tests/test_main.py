@@ -144,6 +144,24 @@ def test_create_reading_accepts_optional_device_state(monkeypatch):
     assert inserted_params == [[27.0, 50.0, True, False, inserted_params[0][4]]]
 
 
+def test_create_reading_rejects_out_of_range_temp_c():
+    resp = client.post(
+        "/api/readings",
+        headers={"X-API-Key": config.API_KEY},
+        json={"temp_c": 60.1, "humidity": 50.0},
+    )
+    assert resp.status_code == 422
+
+
+def test_create_reading_rejects_out_of_range_humidity():
+    resp = client.post(
+        "/api/readings",
+        headers={"X-API-Key": config.API_KEY},
+        json={"temp_c": 27.0, "humidity": 100.1},
+    )
+    assert resp.status_code == 422
+
+
 def test_create_reading_stores_null_when_device_state_omitted(monkeypatch):
     inserted_params = []
     monkeypatch.setattr(

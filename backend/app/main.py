@@ -39,12 +39,13 @@ def healthz() -> dict:
 
 @app.post("/api/readings", status_code=201, dependencies=[Depends(verify_api_key)])
 def create_reading(reading: ReadingIn) -> dict:
+    environment = reading.to_environment()
     now = datetime.now(timezone.utc).isoformat()
     d1.query(
         "INSERT INTO readings (temp_c, humidity, is_light_on, is_heater_on, recorded_at) VALUES (?, ?, ?, ?, ?)",
-        [reading.temp_c, reading.humidity, reading.is_light_on, reading.is_heater_on, now],
+        [environment.temperature.celsius, environment.humidity.percent, reading.is_light_on, reading.is_heater_on, now],
     )
-    alerts.evaluate_and_notify(reading.temp_c, reading.humidity)
+    alerts.evaluate_and_notify(environment.temperature.celsius, environment.humidity.percent)
     return {"status": "ok"}
 
 
