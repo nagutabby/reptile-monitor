@@ -6,7 +6,7 @@ import anyio.to_thread
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 
 from . import alerts, config, d1
-from .schemas import ReadingIn, ReadingOut
+from .schemas import DeviceStateOut, ReadingIn, ReadingOut
 
 logger = logging.getLogger("reptile_monitor")
 
@@ -41,8 +41,8 @@ def healthz() -> dict:
 def create_reading(reading: ReadingIn) -> dict:
     now = datetime.now(timezone.utc).isoformat()
     d1.query(
-        "INSERT INTO readings (temp_c, humidity, recorded_at) VALUES (?, ?, ?)",
-        [reading.temp_c, reading.humidity, now],
+        "INSERT INTO readings (temp_c, humidity, is_light_on, is_heater_on, recorded_at) VALUES (?, ?, ?, ?, ?)",
+        [reading.temp_c, reading.humidity, reading.is_light_on, reading.is_heater_on, now],
     )
     alerts.evaluate_and_notify(reading.temp_c, reading.humidity)
     return {"status": "ok"}
@@ -55,6 +55,24 @@ def list_readings(minutes: int = Query(default=360, ge=1, le=MAX_LOOKBACK_MINUTE
         "SELECT id, temp_c, humidity, recorded_at FROM readings WHERE recorded_at >= ? ORDER BY recorded_at ASC",
         [cutoff],
     )
+
+
+@app.get("/api/device_state", response_model=DeviceStateOut, dependencies=[Depends(verify_api_key)])
+def get_device_state() -> dict:
+    light = d1.query(
+        "SELECT is_light_on, recorded_at FROM readings WHERE is_light_on IS NOT NULL ORDER BY recorded_at DESC LIMIT 1",
+    )
+    heater = d1.query(
+        "SELECT is_heater_on, recorded_at FROM readings WHERE is_heater_on IS NOT NULL ORDER BY recorded_at DESC LIMIT 1",
+    )
+    light_row = light[0] if light else {}
+    heater_row = heater[0] if heater else {}
+    return {
+        "is_light_on": light_row.get("is_light_on"),
+        "is_light_on_changed_at": light_row.get("recorded_at"),
+        "is_heater_on": heater_row.get("is_heater_on"),
+        "is_heater_on_changed_at": heater_row.get("recorded_at"),
+    }
 
 
 # LINE_TO_ID(push先のuserId)を特定するための診断用エンドポイント。LINE Developers

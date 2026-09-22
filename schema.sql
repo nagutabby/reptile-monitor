@@ -2,6 +2,10 @@ CREATE TABLE IF NOT EXISTS readings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     temp_c REAL NOT NULL,
     humidity REAL NOT NULL,
+    -- 状態が変化したタイミングの行だけ値が入る(それ以外はNULL)。
+    -- 現在値は「NULLでない最新行」を参照して求める。
+    is_light_on INTEGER,
+    is_heater_on INTEGER,
     recorded_at TEXT NOT NULL
 );
 

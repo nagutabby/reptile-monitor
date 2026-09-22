@@ -67,6 +67,48 @@ def test_list_readings_accepts_minutes_at_one_week_boundary(monkeypatch):
     assert resp.status_code == 200
 
 
+def test_device_state_requires_api_key_header():
+    resp = client.get("/api/device_state")
+    assert resp.status_code == 422  # ヘッダー自体が無い
+
+
+def test_device_state_returns_latest_non_null_values(monkeypatch):
+    queries = []
+
+    def fake_query(sql, params=None):
+        queries.append(sql)
+        if "is_light_on" in sql:
+            return [{"is_light_on": 1, "recorded_at": "2026-09-22T10:00:00+00:00"}]
+        return [{"is_heater_on": 0, "recorded_at": "2026-09-22T09:00:00+00:00"}]
+
+    monkeypatch.setattr(d1_module, "query", fake_query)
+
+    resp = client.get("/api/device_state", headers={"X-API-Key": config.API_KEY})
+
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "is_light_on": True,
+        "is_light_on_changed_at": "2026-09-22T10:00:00+00:00",
+        "is_heater_on": False,
+        "is_heater_on_changed_at": "2026-09-22T09:00:00+00:00",
+    }
+    assert len(queries) == 2
+
+
+def test_device_state_is_null_when_never_reported(monkeypatch):
+    monkeypatch.setattr(d1_module, "query", lambda sql, params=None: [])
+
+    resp = client.get("/api/device_state", headers={"X-API-Key": config.API_KEY})
+
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "is_light_on": None,
+        "is_light_on_changed_at": None,
+        "is_heater_on": None,
+        "is_heater_on_changed_at": None,
+    }
+
+
 def test_create_reading_inserts_and_evaluates_alert(monkeypatch):
     inserted_sql = []
     monkeypatch.setattr(d1_module, "query", lambda sql, params=None: inserted_sql.append(sql) or [])
@@ -83,3 +125,37 @@ def test_create_reading_inserts_and_evaluates_alert(monkeypatch):
     assert resp.status_code == 201
     assert notified == [(27.0, 50.0)]
     assert any(sql.startswith("INSERT") for sql in inserted_sql)
+
+
+def test_create_reading_accepts_optional_device_state(monkeypatch):
+    inserted_params = []
+    monkeypatch.setattr(
+        d1_module, "query", lambda sql, params=None: inserted_params.append(params) or []
+    )
+    monkeypatch.setattr(alerts, "evaluate_and_notify", lambda temp_c, humidity: None)
+
+    resp = client.post(
+        "/api/readings",
+        headers={"X-API-Key": config.API_KEY},
+        json={"temp_c": 27.0, "humidity": 50.0, "is_light_on": True, "is_heater_on": False},
+    )
+
+    assert resp.status_code == 201
+    assert inserted_params == [[27.0, 50.0, True, False, inserted_params[0][4]]]
+
+
+def test_create_reading_stores_null_when_device_state_omitted(monkeypatch):
+    inserted_params = []
+    monkeypatch.setattr(
+        d1_module, "query", lambda sql, params=None: inserted_params.append(params) or []
+    )
+    monkeypatch.setattr(alerts, "evaluate_and_notify", lambda temp_c, humidity: None)
+
+    resp = client.post(
+        "/api/readings",
+        headers={"X-API-Key": config.API_KEY},
+        json={"temp_c": 27.0, "humidity": 50.0},
+    )
+
+    assert resp.status_code == 201
+    assert inserted_params == [[27.0, 50.0, None, None, inserted_params[0][4]]]
